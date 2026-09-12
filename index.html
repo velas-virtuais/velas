@@ -275,6 +275,27 @@
             border-color: rgba(255, 200, 100, 0.25);
         }
 
+        /* --- Novo Estilo do Botão de Denúncia --- */
+        .denunciar-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1em;
+            opacity: 0.3;
+            transition: opacity 0.3s, filter 0.3s;
+            filter: grayscale(100%);
+            z-index: 10;
+        }
+
+        .denunciar-btn:hover {
+            opacity: 1;
+            filter: grayscale(0%);
+        }
+        /* -------------------------------------- */
+
         .candle-container {
             position: relative;
             height: 90px;
@@ -618,10 +639,15 @@
         let velasGerais = [];
         let filtroAtual = 'Todas';
 
+        // Otimização e Filtro Comunitário: Ocultar velas com 3 ou mais denúncias
         db.collection("velas").orderBy("dataCriacao", "desc").onSnapshot(snapshot => {
             velasGerais = [];
             snapshot.forEach(doc => {
-                velasGerais.push({ id: doc.id, ...doc.data() });
+                const data = doc.data();
+                // A vela só entra na lista se tiver menos de 3 denúncias
+                if ((data.denuncias || 0) < 3) {
+                    velasGerais.push({ id: doc.id, ...data });
+                }
             });
             renderizar();
         }, err => {
@@ -650,6 +676,7 @@
                     causa: causaInput,
                     intencao: intencaoInput,
                     rezas: 0,
+                    denuncias: 0, // Campo iniciado do zero
                     data: new Date().toLocaleDateString("pt-BR"),
                     dataCriacao: firebase.firestore.FieldValue.serverTimestamp()
                 });
@@ -679,6 +706,19 @@
             });
         }
 
+        // Função de denúncia adicionada
+        function denunciar(id) {
+            if (confirm("Você considera esta prece ofensiva ou inadequada? Ao confirmar, ela será sinalizada para moderação da comunidade.")) {
+                db.collection("velas").doc(id).update({
+                    denuncias: firebase.firestore.FieldValue.increment(1)
+                }).then(() => {
+                    mostrarToast("🚩 Relato enviado. A comunidade agradece!");
+                }).catch(e => {
+                    console.error("Erro ao denunciar:", e);
+                });
+            }
+        }
+
         function filtrarVelas(categoria, el) {
             filtroAtual = categoria;
             document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
@@ -698,6 +738,7 @@
                 return;
             }
 
+            // Inserido o botão de denúncia na estrutura de cada card
             mural.innerHTML = velasExibidas.map(v => {
                 const icone = iconesCausa[v.causa] || '🕯️';
                 const quantidadeRezas = v.rezas || 0;
@@ -705,6 +746,7 @@
 
                 return `
                     <div class="vela-card">
+                        <button class="denunciar-btn" onclick="denunciar('${v.id}')" title="Sinalizar conteúdo impróprio">🚩</button>
                         <div class="candle-container">
                             <div class="glow"></div>
                             <div class="smoke"></div>
