@@ -551,7 +551,6 @@
         </div>
     </div>
 
-    <!-- Script principal da página -->
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyDUk3m16VrFgxgqc2a4g5pCyh-0ZSPmkCk",
@@ -638,6 +637,7 @@
         let velasGerais = [];
         let filtroAtual = 'Todas';
 
+        // Otimização e Filtro Comunitário: Ocultar velas com 3 ou mais denúncias
         db.collection("velas").orderBy("dataCriacao", "desc").onSnapshot(snapshot => {
             velasGerais = [];
             snapshot.forEach(doc => {
@@ -651,8 +651,71 @@
             console.error("Erro ao escutar Firestore:", err);
         });
 
-        // NOTA: A função acenderVela() foi removida daqui! 
-        // Ela agora será gerenciada exclusivamente pelo arquivo moderacao.js abaixo.
+        // --- NOVA FUNÇÃO acenderVela() COM INTEGRAÇÃO WORKER / OPENAI ---
+        async function acenderVela() {
+            const nomeInput = document.getElementById("nome").value.trim() || "Anônimo";
+            const causaInput = document.getElementById("causa").value;
+            const intencaoInput = document.getElementById("intencao").value.trim();
+            const btnAcao = document.getElementById("btn-acao");
+
+            if (!intencaoInput) {
+                alert("Por favor, escreva a sua intenção ou oração antes de acender a vela.");
+                return;
+            }
+
+            if (btnAcao) {
+                btnAcao.disabled = true;
+                btnAcao.innerText = "Verificando prece...";
+            }
+
+            try {
+                // 1. CHAMADA DE MODERAÇÃO VIA CLOUDFLARE WORKER
+                const workerUrl = "https://tight-dream-bc5b.joaodelrei29.workers.dev";
+                const textoParaVerificar = `${nomeInput}: ${intencaoInput}`;
+
+                const modResponse = await fetch(workerUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ text: textoParaVerificar })
+                });
+
+                if (modResponse.ok) {
+                    const modData = await modResponse.json();
+                    if (modData.flagged) {
+                        alert("⚠️ A sua prece contém termos identificados como inadequados ou ofensivos pelo sistema de moderação e não pôde ser publicada.");
+                        return;
+                    }
+                } else {
+                    console.warn("Não foi possível conectar ao serviço de moderação, prosseguindo com atenção.");
+                }
+
+                // 2. SALVAR NO FIRESTORE SE APROVADO
+                if (btnAcao) btnAcao.innerText = "Acendendo...";
+
+                await db.collection("velas").add({
+                    nome: nomeInput,
+                    causa: causaInput,
+                    intencao: intencaoInput,
+                    rezas: 0,
+                    denuncias: 0,
+                    data: new Date().toLocaleDateString("pt-BR"),
+                    dataCriacao: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                mostrarToast("🕯️ Sua vela foi acesa no mural.");
+                document.getElementById("nome").value = "";
+                document.getElementById("intencao").value = "";
+                if (!audioPlaying) toggleAudio();
+            } catch (e) {
+                console.error("Erro ao salvar:", e);
+                alert("Erro ao acender a vela. Verifique a conexão com o banco de dados.");
+            } finally {
+                if (btnAcao) {
+                    btnAcao.disabled = false;
+                    btnAcao.innerText = "🕯️ Acender Esta Vela";
+                }
+            }
+        }
 
         function rezar(id) {
             db.collection("velas").doc(id).update({
@@ -721,9 +784,5 @@
             }).join("");
         }
     </script>
-
-    <!-- 👇 Aqui está o pulo do gato! Conectamos o script de moderação 👇 -->
-    <script src="moderacao.js"></script>
-
 </body>
 </html>
