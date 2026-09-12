@@ -275,7 +275,6 @@
             border-color: rgba(255, 200, 100, 0.25);
         }
 
-        /* --- Novo Estilo do Botão de Denúncia --- */
         .denunciar-btn {
             position: absolute;
             top: 15px;
@@ -294,7 +293,6 @@
             opacity: 1;
             filter: grayscale(0%);
         }
-        /* -------------------------------------- */
 
         .candle-container {
             position: relative;
@@ -553,6 +551,7 @@
         </div>
     </div>
 
+    <!-- Script principal da página -->
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyDUk3m16VrFgxgqc2a4g5pCyh-0ZSPmkCk",
@@ -639,12 +638,10 @@
         let velasGerais = [];
         let filtroAtual = 'Todas';
 
-        // Otimização e Filtro Comunitário: Ocultar velas com 3 ou mais denúncias
         db.collection("velas").orderBy("dataCriacao", "desc").onSnapshot(snapshot => {
             velasGerais = [];
             snapshot.forEach(doc => {
                 const data = doc.data();
-                // A vela só entra na lista se tiver menos de 3 denúncias
                 if ((data.denuncias || 0) < 3) {
                     velasGerais.push({ id: doc.id, ...data });
                 }
@@ -654,47 +651,8 @@
             console.error("Erro ao escutar Firestore:", err);
         });
 
-        async function acenderVela() {
-            const nomeInput = document.getElementById("nome").value.trim() || "Anônimo";
-            const causaInput = document.getElementById("causa").value;
-            const intencaoInput = document.getElementById("intencao").value.trim();
-            const btnAcao = document.getElementById("btn-acao");
-
-            if (!intencaoInput) {
-                alert("Por favor, escreva a sua intenção ou oração antes de acender a vela.");
-                return;
-            }
-
-            if (btnAcao) {
-                btnAcao.disabled = true;
-                btnAcao.innerText = "Acendendo...";
-            }
-
-            try {
-                await db.collection("velas").add({
-                    nome: nomeInput,
-                    causa: causaInput,
-                    intencao: intencaoInput,
-                    rezas: 0,
-                    denuncias: 0, // Campo iniciado do zero
-                    data: new Date().toLocaleDateString("pt-BR"),
-                    dataCriacao: firebase.firestore.FieldValue.serverTimestamp()
-                });
-
-                mostrarToast("🕯️ Sua vela foi acesa no mural.");
-                document.getElementById("nome").value = "";
-                document.getElementById("intencao").value = "";
-                if (!audioPlaying) toggleAudio();
-            } catch (e) {
-                console.error("Erro ao salvar:", e);
-                alert("Erro ao acender a vela. Verifique a conexão com o banco de dados.");
-            } finally {
-                if (btnAcao) {
-                    btnAcao.disabled = false;
-                    btnAcao.innerText = "🕯️ Acender Esta Vela";
-                }
-            }
-        }
+        // NOTA: A função acenderVela() foi removida daqui! 
+        // Ela agora será gerenciada exclusivamente pelo arquivo moderacao.js abaixo.
 
         function rezar(id) {
             db.collection("velas").doc(id).update({
@@ -706,7 +664,6 @@
             });
         }
 
-        // Função de denúncia adicionada
         function denunciar(id) {
             if (confirm("Você considera esta prece ofensiva ou inadequada? Ao confirmar, ela será sinalizada para moderação da comunidade.")) {
                 db.collection("velas").doc(id).update({
@@ -738,7 +695,6 @@
                 return;
             }
 
-            // Inserido o botão de denúncia na estrutura de cada card
             mural.innerHTML = velasExibidas.map(v => {
                 const icone = iconesCausa[v.causa] || '🕯️';
                 const quantidadeRezas = v.rezas || 0;
@@ -765,5 +721,9 @@
             }).join("");
         }
     </script>
+
+    <!-- 👇 Aqui está o pulo do gato! Conectamos o script de moderação 👇 -->
+    <script src="moderacao.js"></script>
+
 </body>
 </html>
