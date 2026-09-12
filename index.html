@@ -649,7 +649,6 @@
             console.error("Erro ao escutar Firestore:", err);
         });
 
-        // --- FUNÇÃO ACENDER VELA COM MODERAÇÃO ATIVA NA CLOUDFLARE ---
         async function acenderVela() {
             const nomeInput = document.getElementById("nome").value.trim() || "Anônimo";
             const causaInput = document.getElementById("causa").value;
@@ -667,14 +666,14 @@
             }
 
             try {
-                // 1. URL do Cloudflare Worker configurada corretamente
                 const workerUrl = "https://tight-dream-bc5b.joaodelrei29.workers.dev";
                 const textoParaVerificar = `${nomeInput}: ${intencaoInput}`;
 
+                // CORREÇÃO: Enviando a chave "texto" para coincidir com o Worker
                 const modResponse = await fetch(workerUrl, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ text: textoParaVerificar })
+                    body: JSON.stringify({ texto: textoParaVerificar })
                 });
 
                 if (!modResponse.ok) {
@@ -683,13 +682,11 @@
 
                 const modData = await modResponse.json();
                 
-                // Se o Worker detectar conteúdo inadequado, barra e NÃO salva no Firebase
                 if (modData.flagged === true || modData.unsafe === true) {
                     alert("⚠️ A sua prece contém termos identificados como inadequados ou ofensivos pelo sistema de moderação e não pôde ser publicada.");
                     return; 
                 }
 
-                // 2. Salva no Firestore somente se for aprovado
                 if (btnAcao) btnAcao.innerText = "Acendendo...";
 
                 await db.collection("velas").add({
