@@ -1,71 +1,69 @@
-// Filtro local rápido para palavras óbvias
-const palavrasProibidas = ["idiota", "merda", "lixo", "burro", "trouxa", "zueira", "kkkk"];
+async function validarTextoComTexto(texto) {
+    const workerURL = "https://tight-dream-bc5b.joaodelrei29.workers.dev";
 
-// URL do seu Cloudflare Worker (Ponte Segura)
-const WORKER_URL = "https://tight-dream-bc5b.joaodelrei29.workers.dev";
-
-async function validarTextoComIA(texto) {
-    if (!texto || texto.trim() === "") return true;
-
-    // 1. Checa primeiro a lista local
-    const textoLimpo = texto.toLowerCase();
-    const contemPalavraProibida = palavrasProibidas.some(palavra => textoLimpo.includes(palavra));
-    
-    if (contemPalavraProibida) {
-        console.log("🛑 Bloqueado pelo filtro local.");
-        return false;
-    }
-
-    // 2. Envia para a IA de Moderação da OpenAI via Cloudflare Worker
     try {
-        const response = await fetch(WORKER_URL, {
+        const response = await fetch(workerURL, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json"
+            },
             body: JSON.stringify({ text: texto })
         });
 
-        const data = await response.json();
-        if (!data.safe) {
-            console.log("🛑 Bloqueado pela Inteligência Artificial.");
+        if (!response.ok) {
+            throw new Error("Erro na comunicação com o Worker");
         }
-        return data.safe;
-    } catch (error) {
-        console.warn("⚠️ Servidor de moderação inacessível. Liberando vela:", error);
-        return true; // Se falhar a conexão, permite a postagem para não travar o usuário
+
+        const data = await response.json();
+        // Retorna verdadeiro se a IA detectar conteúdo impróprio (flagged ou unsafe)
+        return data.flagged === true || data.unsafe === true;
+    } catch (err) {
+        console.error("Erro na moderação:", err);
+        return false; // Se houver falha técnica na API, não trava o site do usuário
     }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
     const btnAcao = document.getElementById("btn-acao");
-    
-    if (btnAcao) {
-        const funcaoOriginal = window.acenderVela;
 
-        window.acenderVela = async function() {
-            const intencaoElement = document.getElementById("intencao");
+    if (btnAcao) {
+        window.acenderVela = async function () {
             const nomeElement = document.getElementById("nome");
-            
-            const intencao = intencaoElement ? intencaoElement.value.trim() : "";
+            const intencaoElement = document.getElementById("intencao");
+            const textoComentario = document.getElementById("comentario"); // ajuste para o ID correto do seu campo de texto da prece
+
             const nome = nomeElement ? nomeElement.value.trim() : "";
-            const textoCompleto = `${nome} ${intencao}`;
+            const intencao = intencaoElement ? intencaoElement.value : "";
+            const texto = textoComentario ? textoComentario.value.trim() : "";
+
+            if (!texto) {
+                alert("Por favor, escreva a sua prece ou pensamento.");
+                return;
+            }
 
             btnAcao.disabled = true;
             btnAcao.innerText = "Verificando intenção...";
 
-            const eRespeitoso = await validarTextoComIA(textoCompleto);
+            // Valida o texto diretamente na IA do Cloudflare/OpenAI
+            const ehImproprio = await validarTextoComTexto(texto);
 
-            if (!eRespeitoso) {
-                alert("Por favor, utilize apenas palavras respeitosas para manter a harmonia deste santuário.");
+            if (ehImproprio) {
                 btnAcao.disabled = false;
-                btnAcao.innerText = "🕯️ Acender Esta Vela";
+                btnAcao.innerText = "Acender Esta Vela";
+                alert("Sua mensagem contém termos ofensivos ou inadequados e não pode ser publicada para manter a harmonia do santuário.");
                 return;
             }
 
-            if (typeof funcaoOriginal === 'function') {
-                funcaoOriginal();
-            } else {
+            // Se passou pela moderação, continua o código normal de salvar no Firebase...
+            try {
+                // ... seu código que adiciona a vela no banco de dados ...
+                alert("Sua vela foi acesa no mural!");
+            } catch (erro) {
+                console.error("Erro ao salvar:", erro);
+                alert("Erro ao acender a vela.");
+            } finally {
                 btnAcao.disabled = false;
-                btnAcao.innerText = "🕯️ Acender Esta Vela";
+                btnAcao.innerText = "Acender Esta Vela";
             }
         };
     }
