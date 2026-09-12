@@ -1,50 +1,76 @@
-// Substitua pelo seu token do Hugging Face
-const HF_TOKEN = "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";
+// Lista expandida de palavras e expressões restritas
+const palavrasProibidas = [
+    "aidética", "aidético", "aleijada", "aleijado", "anã", "analfabeta", "analfabeto", "anão", "anus", 
+    "apenada", "apenado", "arrombado", "babaca", "baba-ovo", "babaovo", "bacura", "bagos", "baianada", 
+    "baitola", "bárbaro", "barbeiro", "barraco", "beata", "bêbado", "bêbedo", "bebum", "besta", "bicha", 
+    "bisca", "bixa", "boazuda", "boçal", "boceta", "boco", "boiola", "bokete", "bolagato", "bolcat", 
+    "boquete", "bosseta", "bosta", "bostana", "branquelo", "brecha", "brexa", "brioco", "bronha", "buca", 
+    "buceta", "bugre", "bunda", "bunduda", "burra", "burro", "busseta", "caceta", "cacete", "cachorra", 
+    "cachorro", "cadela", "caga", "cagado", "cagao", "cagão", "cagona", "caipira", "canalha", "canceroso", 
+    "caralho", "casseta", "cassete", "ceguinho", "checheca", "chereca", "chibumba", "chibumbo", "chifruda", 
+    "chifrudo", "chochota", "chota", "chupada", "chupado", "ciganos", "clitoris", "clitóris", "cocaina", 
+    "cocaína", "coco", "cocô", "comunista", "corna", "cornagem", "cornão", "cornisse", "corno", "cornuda", 
+    "cornudo", "corrupta", "corrupto", "coxo", "cretina", "cretino", "criolo", "crioulo", "cruz-credo", 
+    "cu", "cú", "culhao", "culhão", "curalho", "cuzao", "cuzão", "cuzuda", "cuzudo", "debil", "débil", 
+    "debiloide", "debilóide", "deficiente", "defunto", "demonio", "demônio", "denegrir", "denigrir", 
+    "detento", "difunto", "doida", "doido", "egua", "égua", "elemento", "encostado", "esclerosado", 
+    "escrota", "escroto", "esporrada", "esporrado", "esporro", "estupida", "estúpida", "estupidez", 
+    "estupido", "estúpido", "facista", "fanatico", "fanático", "fascista", "fedida", "fedido", "fedor", 
+    "fedorenta", "feia", "feio", "feiosa", "feioso", "feioza", "feiozo", "felacao", "felação", "fenda", 
+    "foda", "fodao", "fodão", "fode", "fodi", "fodida", "fodido", "fornica", "fornição", "fudeção", 
+    "fudendo", "fudida", "fudido", "furada", "furado", "furão", "furnica", "furnicar", "furo", "furona", 
+    "gai", "gaiata", "gaiato", "gay", "gilete", "goianada", "gonorrea", "gonorreia", "gonorréia", 
+    "gosmenta", "gosmento", "grelinho", "grelo", "gringo", "homo-sexual", "homosexual", "homosexualismo", 
+    "homossexual", "homossexualismo", "idiota", "idiotice", "imbecil", "inculto", "iscrota", "iscroto", 
+    "japa", "judiar", "ladra", "ladrao", "ladrão", "ladroeira", "ladrona", "lalau", "lazarento", "leprosa", 
+    "leproso", "lesbica", "lésbica", "louco", "macaca", "macaco", "machona", "macumbeiro", "malandro", 
+    "maluco", "maneta", "marginal", "masturba", "meleca", "meliante", "merda", "mija", "mijada", "mijado", 
+    "mijo", "minorias", "mocrea", "mocreia", "mocréia", "moleca", "moleque", "mondronga", "mondrongo", 
+    "mongol", "mongoloide", "mongolóide", "mulata", "mulato", "naba", "nadega", "nádega", "nazista", 
+    "negro", "nhaca", "nojeira", "nojenta", "nojento", "nojo", "olhota", "otaria", "otária", "otario", 
+    "otário", "paca", "palhaco", "palhaço", "paspalha", "paspalhao", "paspalho", "pau", "peão", "peia", 
+    "peido", "pemba", "penis", "pênis", "pentelha", "pentelho", "perereca", "perneta", "peru", "pica", 
+    "picao", "picão", "pilantra", "pinel", "pintão", "pinto", "pintudo", "piranha", "piroca", "piroco", 
+    "piru", "pivete", "porra", "prega", "prequito", "preso", "priquito", "prostibulo", "prostituta", 
+    "prostituto", "punheta", "punhetao", "punhetão", "pus", "pustula", "puta", "puto", "puxa-saco", 
+    "puxasaco", "rabao", "rabão", "rabo", "rabuda", "rabudao", "rabudão", "rabudo", "rabudona", "racha", 
+    "rachada", "rachadao", "rachadinha", "rachadinho", "rachado", "ramela", "remela", "retardada", 
+    "retardado", "ridícula", "roceiro", "rola", "rolinha", "rosca", "sacana", "safada", "safado", 
+    "sapatao", "sapatão", "sifilis", "sífilis", "siririca", "tarada", "tarado", "testuda", "tesuda", 
+    "tesudo", "tezao", "tezuda", "tezudo", "traveco", "trocha", "trolha", "troucha", "trouxa", "troxa", 
+    "tuberculoso", "tupiniquim", "turco", "vaca", "vadia", "vagabunda", "vagabundo", "vagal", "vagina", 
+    "veada", "veadao", "veado", "viada", "viadagem", "viadao", "viadão", "viado", "víado", "xana", 
+    "xaninha", "xavasca", "xerereca", "xexeca", "xibiu", "xibumba", "xiíta", "xochota", "xota", "xoxota"
+];
 
-// 1. Filtro Rápido Local (Adicione aqui as palavras óbvias e chacotas comuns)
-const palavrasProibidas = ["idiota", "merda", "lixo", "burro", "trouxa", "zueira", "kkkk"];
-
-async function validarTextoComIA(texto) {
+// Função de validação inteligente (normaliza acentos e previne falsos positivos)
+async function validarTexto(texto) {
     if (!texto || texto.trim() === "") return true;
 
-    // Passo 1: Checa a lista local primeiro (rápido e não falha)
-    const textoLimpo = texto.toLowerCase();
-    const contemPalavrao = palavrasProibidas.some(palavra => textoLimpo.includes(palavra));
+    // Remove acentos e converte para minúsculo para comparação uniforme
+    const textoLimpo = texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     
-    if (contemPalavrao) {
-        console.log("🛑 Bloqueado pelo filtro de lista local.");
-        return false; // É tóxico
-    }
+    // Separa o texto em palavras individuais para checar termos muito curtos (ex: "cu", "pau")
+    const palavrasTexto = textoLimpo.split(/\s+|[.,!?;:]+/);
 
-    // Passo 2: Se passou na lista, pede para a IA analisar o contexto
-    try {
-        const response = await fetch(
-            "https://api-inference.huggingface.co/models/citizenlab/twitter-xlm-roberta-base-toxicity",
-            {
-                headers: { 
-                    "Authorization": `Bearer ${HF_TOKEN}`,
-                    "Content-Type": "application/json"
-                },
-                method: "POST",
-                body: JSON.stringify({ inputs: texto }),
-            }
-        );
-
-        const result = await response.json();
-        console.log("🤖 Resposta da IA:", result); // Mostra a pontuação no console (F12)
-
-        if (Array.isArray(result) && result[0]) {
-            // LABEL_1 significa tóxico neste modelo multilíngue
-            const toxico = result[0].some(item => item.label === 'LABEL_1' && item.score > 0.65);
-            if (toxico) console.log("🛑 Bloqueado pela Inteligência Artificial.");
-            return !toxico;
+    const contemPalavrao = palavrasProibidas.some(palavra => {
+        const palavraNormalizada = palavra.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        
+        // Termos de até 3 letras exigem correspondência exata de palavra (evita bloquear "desculpa" por causa de "cu")
+        if (palavraNormalizada.length <= 3) {
+            return palavrasTexto.includes(palavraNormalizada);
         }
+        
+        // Termos maiores checam se estão contidos no texto
+        return textoLimpo.includes(palavraNormalizada);
+    });
 
-        return true; 
-    } catch (error) {
-        console.warn("⚠️ Servidor da IA demorou ou falhou. Liberando a vela:", error);
-        return true; 
+    if (contemPalavrao) {
+        console.log("🛑 Bloqueado pelo filtro local.");
+        return false;
     }
+
+    return true; 
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -54,14 +80,19 @@ document.addEventListener("DOMContentLoaded", () => {
         const funcaoOriginal = window.acenderVela;
 
         window.acenderVela = async function() {
-            const intencao = document.getElementById("intencao").value.trim();
-            const nome = document.getElementById("nome").value.trim();
+            const intencaoElement = document.getElementById("intencao");
+            const nomeElement = document.getElementById("nome");
+            
+            const intencao = intencaoElement ? intencaoElement.value.trim() : "";
+            const nome = nomeElement ? nomeElement.value.trim() : "";
             const textoCompleto = `${nome} ${intencao}`;
 
             btnAcao.disabled = true;
             btnAcao.innerText = "Verificando intenção...";
 
-            const eRespeitoso = await validarTextoComIA(textoCompleto);
+            await new Promise(resolve => setTimeout(resolve, 400));
+
+            const eRespeitoso = await validarTexto(textoCompleto);
 
             if (!eRespeitoso) {
                 alert("Por favor, utilize apenas palavras respeitosas para manter a harmonia deste santuário.");
@@ -70,7 +101,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            funcaoOriginal();
+            if (typeof funcaoOriginal === 'function') {
+                funcaoOriginal();
+            } else {
+                btnAcao.disabled = false;
+                btnAcao.innerText = "🕯️ Acender Esta Vela";
+            }
         };
     }
 });
