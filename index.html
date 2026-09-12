@@ -6,7 +6,6 @@
     <title>Vela Virtual — Espaço de Oração e Contemplação</title>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     
-    <!-- SDKs do Firebase (Versão Compatível Web) -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
@@ -637,7 +636,6 @@
         let velasGerais = [];
         let filtroAtual = 'Todas';
 
-        // Otimização e Filtro Comunitário: Ocultar velas com 3 ou mais denúncias
         db.collection("velas").orderBy("dataCriacao", "desc").onSnapshot(snapshot => {
             velasGerais = [];
             snapshot.forEach(doc => {
@@ -651,7 +649,7 @@
             console.error("Erro ao escutar Firestore:", err);
         });
 
-        // --- FUNÇÃO acenderVela() CORRIGIDA COM BLOQUEIO SEGURO ---
+        // --- FUNÇÃO ACENDER VELA COM MODERAÇÃO ATIVA NA CLOUDFLARE ---
         async function acenderVela() {
             const nomeInput = document.getElementById("nome").value.trim() || "Anônimo";
             const causaInput = document.getElementById("causa").value;
@@ -669,7 +667,7 @@
             }
 
             try {
-                // 1. CHAMADA DE MODERAÇÃO VIA CLOUDFLARE WORKER
+                // 1. URL do Cloudflare Worker configurada corretamente
                 const workerUrl = "https://tight-dream-bc5b.joaodelrei29.workers.dev";
                 const textoParaVerificar = `${nomeInput}: ${intencaoInput}`;
 
@@ -679,20 +677,19 @@
                     body: JSON.stringify({ text: textoParaVerificar })
                 });
 
-                // Se o Worker falhar ou der erro de conexão, barramos por segurança
                 if (!modResponse.ok) {
                     throw new Error("Erro na comunicação com o sistema de segurança.");
                 }
 
                 const modData = await modResponse.json();
                 
-                // Aceita tanto 'flagged' quanto 'unsafe' retornado pelo worker
+                // Se o Worker detectar conteúdo inadequado, barra e NÃO salva no Firebase
                 if (modData.flagged === true || modData.unsafe === true) {
                     alert("⚠️ A sua prece contém termos identificados como inadequados ou ofensivos pelo sistema de moderação e não pôde ser publicada.");
-                    return; // Interrompe e NÃO salva no Firebase
+                    return; 
                 }
 
-                // 2. SALVAR NO FIRESTORE SE APROVADO
+                // 2. Salva no Firestore somente se for aprovado
                 if (btnAcao) btnAcao.innerText = "Acendendo...";
 
                 await db.collection("velas").add({
