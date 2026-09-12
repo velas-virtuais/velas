@@ -1,13 +1,25 @@
 // Substitua pelo seu token do Hugging Face
-const HF_TOKEN = "Shf_rMlEUEFonloSDJwVkLWrwYIdQHwwTAkWcs";
+const HF_TOKEN = "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";
 
-// Função responsável por consultar a IA
+// 1. Filtro Rápido Local (Adicione aqui as palavras óbvias e chacotas comuns)
+const palavrasProibidas = ["idiota", "merda", "lixo", "burro", "trouxa", "zueira", "kkkk"];
+
 async function validarTextoComIA(texto) {
     if (!texto || texto.trim() === "") return true;
 
+    // Passo 1: Checa a lista local primeiro (rápido e não falha)
+    const textoLimpo = texto.toLowerCase();
+    const contemPalavrao = palavrasProibidas.some(palavra => textoLimpo.includes(palavra));
+    
+    if (contemPalavrao) {
+        console.log("🛑 Bloqueado pelo filtro de lista local.");
+        return false; // É tóxico
+    }
+
+    // Passo 2: Se passou na lista, pede para a IA analisar o contexto
     try {
         const response = await fetch(
-            "https://api-inference.huggingface.co/models/unitary/unbiased-toxic-roberta",
+            "https://api-inference.huggingface.co/models/citizenlab/twitter-xlm-roberta-base-toxicity",
             {
                 headers: { 
                     "Authorization": `Bearer ${HF_TOKEN}`,
@@ -19,32 +31,28 @@ async function validarTextoComIA(texto) {
         );
 
         const result = await response.json();
+        console.log("🤖 Resposta da IA:", result); // Mostra a pontuação no console (F12)
 
-        // Se a API retornar um array de classificações
         if (Array.isArray(result) && result[0]) {
-            // Procura por pontuações de toxicidade acima de 60% (0.6)
-            const toxico = result[0].some(item => 
-                ['toxic', 'insult', 'identity_attack'].includes(item.label) && item.score > 0.6
-            );
-            return !toxico; // Retorna false se for tóxico
+            // LABEL_1 significa tóxico neste modelo multilíngue
+            const toxico = result[0].some(item => item.label === 'LABEL_1' && item.score > 0.65);
+            if (toxico) console.log("🛑 Bloqueado pela Inteligência Artificial.");
+            return !toxico;
         }
 
-        return true; // Libera caso a IA não retorne o formato esperado
+        return true; 
     } catch (error) {
-        console.warn("IA indisponível no momento. Liberando publicação:", error);
-        return true; // Se a IA falhar, não trava a vela do usuário
+        console.warn("⚠️ Servidor da IA demorou ou falhou. Liberando a vela:", error);
+        return true; 
     }
 }
 
-// Sobrescreve suavemente o clique do botão sem destruir o HTML
 document.addEventListener("DOMContentLoaded", () => {
     const btnAcao = document.getElementById("btn-acao");
     
     if (btnAcao) {
-        // Guarda a função original acenderVela()
         const funcaoOriginal = window.acenderVela;
 
-        // Intercepta a chamada para validar com a IA antes
         window.acenderVela = async function() {
             const intencao = document.getElementById("intencao").value.trim();
             const nome = document.getElementById("nome").value.trim();
@@ -62,7 +70,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            // Se for respeitoso, executa a função original do index.html
             funcaoOriginal();
         };
     }
