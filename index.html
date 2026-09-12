@@ -651,7 +651,7 @@
             console.error("Erro ao escutar Firestore:", err);
         });
 
-        // --- NOVA FUNÇÃO acenderVela() COM INTEGRAÇÃO WORKER / OPENAI ---
+        // --- FUNÇÃO acenderVela() CORRIGIDA COM BLOQUEIO SEGURO ---
         async function acenderVela() {
             const nomeInput = document.getElementById("nome").value.trim() || "Anônimo";
             const causaInput = document.getElementById("causa").value;
@@ -679,14 +679,17 @@
                     body: JSON.stringify({ text: textoParaVerificar })
                 });
 
-                if (modResponse.ok) {
-                    const modData = await modResponse.json();
-                    if (modData.flagged) {
-                        alert("⚠️ A sua prece contém termos identificados como inadequados ou ofensivos pelo sistema de moderação e não pôde ser publicada.");
-                        return;
-                    }
-                } else {
-                    console.warn("Não foi possível conectar ao serviço de moderação, prosseguindo com atenção.");
+                // Se o Worker falhar ou der erro de conexão, barramos por segurança
+                if (!modResponse.ok) {
+                    throw new Error("Erro na comunicação com o sistema de segurança.");
+                }
+
+                const modData = await modResponse.json();
+                
+                // Aceita tanto 'flagged' quanto 'unsafe' retornado pelo worker
+                if (modData.flagged === true || modData.unsafe === true) {
+                    alert("⚠️ A sua prece contém termos identificados como inadequados ou ofensivos pelo sistema de moderação e não pôde ser publicada.");
+                    return; // Interrompe e NÃO salva no Firebase
                 }
 
                 // 2. SALVAR NO FIRESTORE SE APROVADO
@@ -707,8 +710,8 @@
                 document.getElementById("intencao").value = "";
                 if (!audioPlaying) toggleAudio();
             } catch (e) {
-                console.error("Erro ao salvar:", e);
-                alert("Erro ao acender a vela. Verifique a conexão com o banco de dados.");
+                console.error("Erro no processo:", e);
+                alert("Não foi possível validar a segurança da mensagem. Por favor, tente novamente.");
             } finally {
                 if (btnAcao) {
                     btnAcao.disabled = false;
