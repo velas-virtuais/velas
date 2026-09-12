@@ -10,6 +10,10 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
+    <!-- Inteligência Artificial do Google para Moderação Avançada -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/toxicity"></script>
+
     <style>
         * {
             margin: 0;
@@ -25,7 +29,6 @@
             background-color: #05050a;
         }
 
-        /* Imagem de Fundo Contemplativa com Animação de Respiração */
         body::before {
             content: "";
             position: fixed;
@@ -45,7 +48,6 @@
             100% { transform: scale(1.18); filter: blur(12px) brightness(0.33); }
         }
 
-        /* Toast Notification */
         .toast {
             position: fixed;
             top: 20px;
@@ -71,7 +73,6 @@
             opacity: 1;
         }
 
-        /* Controle de Áudio Flutuante */
         .audio-control {
             position: fixed;
             bottom: 24px;
@@ -299,26 +300,6 @@
             background: #2a2a2a;
         }
 
-        .smoke {
-            position: absolute;
-            top: -45px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 8px;
-            height: 8px;
-            background: rgba(200, 200, 200, 0.3);
-            border-radius: 50%;
-            filter: blur(4px);
-            animation: smokeRise 3s ease-out infinite;
-            pointer-events: none;
-        }
-
-        @keyframes smokeRise {
-            0% { opacity: 0.4; transform: translateX(-50%) translateY(0) scale(1); }
-            50% { opacity: 0.2; transform: translateX(-80%) translateY(-18px) scale(2.2); }
-            100% { opacity: 0; transform: translateX(-20%) translateY(-35px) scale(3.5); }
-        }
-
         .flame {
             position: absolute;
             top: -32px;
@@ -469,7 +450,6 @@
 </head>
 <body>
 
-    <!-- Notificação Toast -->
     <div id="toast" class="toast">🙏 Sua prece foi unida com carinho.</div>
 
     <div class="stars" id="stars"></div>
@@ -480,7 +460,7 @@
     </div>
 
     <audio id="ambient-audio" loop preload="auto">
-    <source src="musica.mp3" type="audio/mpeg">
+        <source src="musica.mp3" type="audio/mpeg">
     </audio>
 
     <header>
@@ -510,7 +490,7 @@
             <label for="intencao">Sua Oração ou Pedido</label>
             <textarea id="intencao" placeholder="Escreva a sua prece ou pensamento com carinho..."></textarea>
 
-            <button class="btn-acender" onclick="acenderVela()">🕯️ Acender Esta Vela</button>
+            <button class="btn-acender" id="btn-acao" onclick="acenderVela()">🕯️ Acender Esta Vela</button>
         </div>
 
         <div class="card">
@@ -531,7 +511,6 @@
     </div>
 
     <script>
-        // Configuração do Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyDUk3m16VrFgxgqc2a4g5pCyh-0ZSPmkCk",
             authDomain: "vela-virtual-55f1d.firebaseapp.com",
@@ -554,6 +533,15 @@
             'Trabalho': '💼',
             'Outra': '🕯️'
         };
+
+        // Carregando a Inteligência Artificial de Moderação do Google (TensorFlow.js)
+        let modeloModeracao = null;
+        const rigor = 0.85;
+
+        toxicity.load(rigor).then(model => {
+            modeloModeracao = model;
+            console.log("IA de moderação inteligente ativada.");
+        });
 
         for (var i = 0; i < 50; i++) {
             var s = document.createElement("div");
@@ -597,4 +585,14 @@
 
         function mostrarToast(mensagem) {
             const toast = document.getElementById("toast");
-            toast.innerText = 
+            toast.innerText = mensagem;
+            toast.classList.add("show");
+            setTimeout(() => {
+                toast.classList.remove("show");
+            }, 3500);
+        }
+
+        async function acenderVela() {
+            const nomeInput = document.getElementById("nome").value.trim();
+            const causaInput = document.getElementById("causa").value;
+            
