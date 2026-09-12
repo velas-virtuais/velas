@@ -8,6 +8,7 @@
     
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="moderacao.js"></script>
 
     <style>
         * {
@@ -666,25 +667,14 @@
             }
 
             try {
-                const workerUrl = "https://tight-dream-bc5b.joaodelrei29.workers.dev";
-                const textoParaVerificar = `${nomeInput}: ${intencaoInput}`;
+                const textoParaVerificar = `${nomeInput} ${intencaoInput}`;
 
-                // CORREÇÃO: Enviando a chave "texto" para coincidir com o Worker
-                const modResponse = await fetch(workerUrl, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ texto: textoParaVerificar })
-                });
+                // Verificação local (autômato), sem chamada a API externa
+                const resultadoModeracao = validarTexto(textoParaVerificar);
 
-                if (!modResponse.ok) {
-                    throw new Error("Erro na comunicação com o sistema de segurança.");
-                }
-
-                const modData = await modResponse.json();
-                
-                if (modData.flagged === true || modData.unsafe === true) {
+                if (resultadoModeracao.flagged) {
                     alert("⚠️ A sua prece contém termos identificados como inadequados ou ofensivos pelo sistema de moderação e não pôde ser publicada.");
-                    return; 
+                    return;
                 }
 
                 if (btnAcao) btnAcao.innerText = "Acendendo...";
