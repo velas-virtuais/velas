@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vela Virtual — Espaço de Oração e Contemplação</title>
+    <title>Adote uma Vela — Espaço de Oração e Contemplação</title>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -505,7 +505,7 @@
     </audio>
 
     <header>
-        <h1>🕯️ Vela Virtual</h1>
+        <h1>🕯️ Adote uma Vela</h1>
         <p>Um santuário silencioso para suas preces, intenções e momentos de contemplação.</p>
         <div class="quote-box" id="quote">"A luz que você acende ilumina não apenas o seu caminho, mas o de todos ao seu redor."</div>
     </header>
@@ -637,7 +637,7 @@
         let velasGerais = [];
         let filtroAtual = 'Todas';
         
-        // NOVO: Memória das velas que o usuário já clicou para revelar
+        // Memória das velas que o usuário já clicou para revelar
         const velasReveladas = new Set();
 
         db.collection("velas").orderBy("dataCriacao", "desc").onSnapshot(snapshot => {
@@ -762,7 +762,7 @@
                 // Verifica se o usuário já clicou para revelar esta vela
                 const estaRevelada = velasReveladas.has(v.id);
 
-                // AQUI ESTÁ A MUDANÇA: Se não estiver revelada, mostra "Adote essa vela" e oculta a intenção
+                // Se não estiver revelada, mostra "Adote essa vela" e oculta a intenção
                 const nomeExibido = estaRevelada ? escapeHtml(v.nome) : "Adote essa vela";
                 
                 const textoIntencao = estaRevelada
