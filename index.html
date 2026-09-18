@@ -427,7 +427,7 @@
             width: 100%;
         }
 
-        .rezar-btn:hover {
+        .rezar-btn:hover:not(:disabled) {
             background: linear-gradient(135deg, #533483, #321854);
             border-color: rgba(180, 140, 240, 0.4);
             transform: translateY(-2px);
@@ -636,6 +636,9 @@
 
         let velasGerais = [];
         let filtroAtual = 'Todas';
+        
+        // NOVO: Memória das velas que o usuário já clicou para revelar
+        const velasReveladas = new Set();
 
         db.collection("velas").orderBy("dataCriacao", "desc").onSnapshot(snapshot => {
             velasGerais = [];
@@ -705,6 +708,12 @@
         }
 
         function rezar(id) {
+            // Marca esta vela como revelada no navegador atual
+            velasReveladas.add(id);
+            
+            // Força a tela a atualizar imediatamente para mostrar a prece
+            renderizar();
+
             db.collection("velas").doc(id).update({
                 rezas: firebase.firestore.FieldValue.increment(1)
             }).then(() => {
@@ -750,6 +759,20 @@
                 const quantidadeRezas = v.rezas || 0;
                 const textoRezas = quantidadeRezas === 1 ? 'prece unida' : 'preces unidas';
 
+                // Verifica se o usuário já clicou para revelar esta vela
+                const estaRevelada = velasReveladas.has(v.id);
+
+                // Se não estiver revelada, mostra "Vela Anônima" e oculta a intenção
+                const nomeExibido = estaRevelada ? escapeHtml(v.nome) : "Vela Anônima";
+                const textoIntencao = estaRevelada
+                    ? `"${escapeHtml(v.intencao)}"`
+                    : `<span style="opacity: 0.5; font-size: 0.85em; font-style: italic;">✨ A intenção desta vela está em silêncio. Una-se em oração para revelá-la.</span>`;
+
+                // Se já estiver revelada, muda o botão para inativo
+                const botaoAcao = estaRevelada
+                    ? `<button class="rezar-btn" style="background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); cursor: default; opacity: 0.7;" disabled>🙏 Você se uniu a esta prece</button>`
+                    : `<button class="rezar-btn" onclick="rezar('${v.id}')">🙏 Unir em Oração</button>`;
+
                 return `
                     <div class="vela-card">
                         <button class="denunciar-btn" onclick="denunciar('${v.id}')" title="Sinalizar conteúdo impróprio">🚩</button>
@@ -760,11 +783,11 @@
                                 <div class="flame"></div>
                             </div>
                         </div>
-                        <h3>${escapeHtml(v.nome)}</h3>
+                        <h3>${nomeExibido}</h3>
                         <span class="causa">${icone} ${escapeHtml(v.causa)}</span>
-                        <p class="intencao">"${escapeHtml(v.intencao)}"</p>
+                        <p class="intencao">${textoIntencao}</p>
                         <p style="font-size: 0.72em; color: #666; margin-bottom: 14px; letter-spacing: 0.3px;">${escapeHtml(v.data || '')}</p>
-                        <button class="rezar-btn" onclick="rezar('${v.id}')">🙏 Unir em Oração</button>
+                        ${botaoAcao}
                         <div class="contador">${quantidadeRezas} ${textoRezas}</div>
                     </div>
                 `;
