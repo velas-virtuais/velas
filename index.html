@@ -762,8 +762,9 @@
                 // Verifica se o usuário já clicou para revelar esta vela
                 const estaRevelada = velasReveladas.has(v.id);
 
-                // Se não estiver revelada, mostra "Vela Anônima" e oculta a intenção
-                const nomeExibido = estaRevelada ? escapeHtml(v.nome) : "Vela Anônima";
+                // AQUI ESTÁ A MUDANÇA: Se não estiver revelada, mostra "Adote essa vela" e oculta a intenção
+                const nomeExibido = estaRevelada ? escapeHtml(v.nome) : "Adote essa vela";
+                
                 const textoIntencao = estaRevelada
                     ? `"${escapeHtml(v.intencao)}"`
                     : `<span style="opacity: 0.5; font-size: 0.85em; font-style: italic;">✨ A intenção desta vela está em silêncio. Una-se em oração para revelá-la.</span>`;
